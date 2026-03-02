@@ -1,0 +1,7 @@
+{
+  "name": "tool_find_optimal_availability",
+  "nodes": [
+    {"name": "Webhook", "type": "n8n-nodes-base.webhook", "parameters": {"httpMethod": "POST", "path": "tool/find_optimal_availability"}},
+    {"name": "Generate Candidate Slots", "type": "n8n-nodes-base.function", "parameters": {"functionCode": "const body = $json;\nif (!body.legal_entity_id) throw new Error('Missing legal_entity_id');\nif (!body.attendees?.length) throw new Error('Missing attendees');\nconst slots = [];\nconst start = new Date(body.date_range.start_date);\nfor (let i=0; i<5; i++) {\n  const slot = new Date(start.getTime() + i * 60 * 60 * 1000);\n  slot.setHours(9 + i, 0, 0, 0);\n  slots.push({start: slot.toISOString(), end: new Date(slot.getTime() + body.duration_minutes*60000).toISOString(), score: 100 - i});\n}\nreturn [{json: {slots}}];"}}
+  ]
+}

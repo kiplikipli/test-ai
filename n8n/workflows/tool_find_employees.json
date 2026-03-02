@@ -1,0 +1,67 @@
+{
+  "name": "tool_find_employees",
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tool/find_employees"
+      }
+    },
+    {
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const b = $json.body || $json;\nif (!b.legal_entity_id) throw new Error('Missing legal_entity_id');\nif (!b.search && !b.request) throw new Error('Provide search or request');\nreturn [{json: b}];"
+      }
+    },
+    {
+      "name": "Has DDL",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.ddl || ''}}",
+              "operation": "notEmpty"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Generate SQL (AI Brain)",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://ai-brain:8000/ai/sql/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { ddl: $json.ddl, request: $json.request || $json.search, legalEntityId: $json.legal_entity_id } }}"
+      }
+    },
+    {
+      "name": "Build Fallback SQL",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const term = ($json.search || '').replace(/'/g, \"''\");\nconst legal = Number($json.legal_entity_id);\nconst sql = `SELECT id, name, email, department, squad FROM employees WHERE legal_entity_id=${legal} AND active=1 AND (name LIKE '%${term}%' OR email LIKE '%${term}%') LIMIT 25`;\nreturn [{json: {...$json, sql}}];"
+      }
+    },
+    {
+      "name": "Normalize SQL",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const sql = $json.sql || $json.data?.sql || $json.body?.sql;\nif (!sql) throw new Error('Missing SQL to execute');\nreturn [{json: {legal_entity_id: $json.legal_entity_id, sql}}];"
+      }
+    },
+    {
+      "name": "Execute SQL",
+      "type": "n8n-nodes-base.mySql",
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{$json.sql}}"
+      }
+    }
+  ]
+}

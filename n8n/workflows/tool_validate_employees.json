@@ -1,0 +1,7 @@
+{
+  "name": "tool_validate_employees",
+  "nodes": [
+    {"name": "Webhook", "type": "n8n-nodes-base.webhook", "parameters": {"httpMethod": "POST", "path": "tool/validate_employees"}},
+    {"name": "Validate & Split", "type": "n8n-nodes-base.function", "parameters": {"functionCode": "const body = $json;\nif (!body.legal_entity_id) throw new Error('Missing legal_entity_id');\nconst attendees = body.attendees || [];\nconst valid = attendees.filter(a => !!a.email || !!a.name);\nconst invalid = attendees.filter(a => !a.email && !a.name);\nreturn [{json: {valid, invalid, legal_entity_id: body.legal_entity_id}}];"}}
+  ]
+}
