@@ -1,0 +1,28 @@
+{
+  "name": "chat_entry",
+  "nodes": [
+    {
+      "name": "Webhook Chat",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {"httpMethod": "POST", "path": "chat"}
+    },
+    {
+      "name": "Validate Payload",
+      "type": "n8n-nodes-base.function",
+      "parameters": {
+        "functionCode": "const b = $json.body || $json;\nconst required = ['sessionId','message','userEmail','legalEntityId'];\nfor (const k of required) { if (b[k] === undefined || b[k] === null || b[k] === '') throw new Error(`Missing ${k}`); }\nreturn [{json: b}];"
+      }
+    },
+    {
+      "name": "Forward To AI Brain",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "http://ai-brain:8000/ai/process",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "tool_create_meeting",
+  "nodes": [
+    {"name": "Webhook", "type": "n8n-nodes-base.webhook", "parameters": {"httpMethod": "POST", "path": "tool/create_meeting"}},
+    {"name": "Create Event", "type": "n8n-nodes-base.googleCalendar", "parameters": {"operation": "create", "calendar": "primary", "start": "={{$json.selected_slot.start}}", "end": "={{$json.selected_slot.end}}", "title": "={{$json.title}}"}},
+    {"name": "Return Event", "type": "n8n-nodes-base.function", "parameters": {"functionCode": "return [{json: {eventId: $json.id || 'mock-event', link: $json.htmlLink || 'https://calendar.google.com'}}];"}}
+  ]
+}
